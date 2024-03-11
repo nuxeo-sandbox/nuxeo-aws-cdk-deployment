@@ -70,6 +70,22 @@ Edit `bin/nuxeo-aws-cdk.js` to set the `contextProps` properties according to yo
 cdk deploy --profile <my-profile>
 ```
 
+## Bastion Host
+All the components (DB, Opensearch and Kafka) are deployed in a private subnet such that the respective APIs can only be accessed by other AWS services or through a bastion host.
+
+The easiest way to open a terminal session is to use the [System Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/install-plugin-macos-overview.html#install-plugin-macos):
+
+```bash
+aws ssm start-session --target <instance-id> --profile <my-profile>
+```
+
+To get the instance id, use the AWS web console or the CLI
+
+```bash
+aws ec2 describe-instances --filters "Name=tag:cost:component,Values=nuxeo" --query "Reservations[].Instances[].InstanceId" --profile <my-profile>
+```
+
+
 # License
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
 
