@@ -1,0 +1,20 @@
+{
+  "name": "nuxeo-aws-cdk-deployment",
+  "version": "0.1.0",
+  "bin": {
+    "nuxeo-aws-cdk": "bin/nuxeo-aws-cdk.js"
+  },
+  "scripts": {
+    "build": "echo \"The build step is not required when using JavaScript!\" && exit 0",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "aws-cdk": "2.132.0"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-msk-alpha": "2.132.0-alpha.0",
+    "aws-cdk-lib": "2.132.0",
+    "cdk-rds-sql": "^2.4.0",
+    "constructs": "^10.0.0"
+  }
+}
