@@ -85,6 +85,18 @@ To get the instance id, use the AWS web console or the CLI
 aws ec2 describe-instances --filters "Name=tag:cost:component,Values=nuxeo" --query "Reservations[].Instances[].InstanceId" --profile <my-profile>
 ```
 
+## Run a Shell on a nuxeo container
+The ECS cluster deployed as part of the stack is configured to enable container command execution
+
+```bash
+aws ecs execute-command --cluster <cluster-name> --task <task-id> --container <container-name> --command "/bin/bash" --interactive --profile <my-profile>
+```
+
+By default, the shell is opened as root. To change to the nuxeo user, run
+
+```bash
+su nuxeo
+```
 
 # License
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
