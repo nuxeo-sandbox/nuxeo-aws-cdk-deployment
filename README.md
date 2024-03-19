@@ -82,7 +82,20 @@ aws ssm start-session --target <instance-id> --profile <my-profile>
 To get the instance id, use the AWS web console or the CLI
 
 ```bash
-aws ec2 describe-instances --filters "Name=tag:cost:component,Values=nuxeo" --query "Reservations[].Instances[].InstanceId" --profile <my-profile>
+aws ec2 describe-instances --filters "Name=tag:aws:cloudformation:stack-name,Values=nuxeo-stack-cdk-try" --query "Reservations[].Instances[].InstanceId" --profile <my-profile>
+```
+
+### PSQL
+First, install the psql command line
+
+```bash
+sudo dnf install postgresql15
+```
+
+Connect to the database with the RDS proxy endpoint and the nuxeo user password (stored in AWS secret manager)
+
+```bash
+psql -h <rds-proxy-endpoint> -u nuxeo
 ```
 
 ## Run a Shell on a nuxeo container
