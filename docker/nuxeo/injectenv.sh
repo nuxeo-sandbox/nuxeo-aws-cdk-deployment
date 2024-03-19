@@ -45,13 +45,9 @@ if [ "${DISABLE_PROCESSING}" == "true" ]; then
 
 echo "Adding conf to disable queues"
 
-cat << EOF > ${NUXEO_HOME}/nxserver/config/disable-processing-config.xml
-<?xml version="1.0" encoding="UTF-8"?>
-<component name="nuxeo-disable-processing" version="1.0.0">
-    <extension point="queues" target="org.nuxeo.ecm.core.work.service">
-        <queue id="*" processing="false"/>
-    </extension>
-</component>
+cat << EOF >> ${NUXEO_CONF}
+nuxeo.stream.processing.enabled=false
+nuxeo.work.processing.enabled=false
 EOF
 
 fi
