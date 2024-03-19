@@ -35,10 +35,14 @@ nuxeo.db.user=nuxeo
 nuxeo.db.password=${DB_PASSWORD}
 nuxeo.db.host=${DB_ENDPOINT}
 nuxeo.db.port=5432
+nuxeo.db.validationQuery=SELECT 1
+
+nuxeo.vcs.max-pool-size=25
 
 session.timeout=600
 nuxeo.selection.selectAllEnabled=true
 nuxeo.video.transaction.timeout.seconds=1800
+
 EOF
 
 if [ "${DISABLE_PROCESSING}" == "true" ]; then
