@@ -36,8 +36,10 @@ nuxeo.db.password=${DB_PASSWORD}
 nuxeo.db.host=${DB_ENDPOINT}
 nuxeo.db.port=5432
 nuxeo.db.validationQuery=SELECT 1
+nuxeo.db.idle-timeout-minutes=10
 
 nuxeo.vcs.max-pool-size=25
+nuxeo.vcs.idle-timeout-minutes=5
 
 session.timeout=600
 nuxeo.selection.selectAllEnabled=true
