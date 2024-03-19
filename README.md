@@ -86,7 +86,7 @@ aws ec2 describe-instances --filters "Name=tag:aws:cloudformation:stack-name,Val
 ```
 
 ### PSQL
-First, install the psql command line
+After opening a shell on the bastion host, install the psql command line
 
 ```bash
 sudo dnf install postgresql15
@@ -96,6 +96,13 @@ Connect to the database with the RDS proxy endpoint and the nuxeo user password 
 
 ```bash
 psql -h <rds-proxy-endpoint> -u nuxeo
+```
+
+### Tunnel
+With session manager, it is possible to open a tunnel through the bastionn host. For example, a tunnel to the DB can be set up in order to use desktop tools like pgAdmin
+
+```bash
+aws ssm start-session --target <instance-id> --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters '{"host":["<rds-proxy-endpoint>"],"portNumber":["5432"],"localPortNumber":["5432"]}' --profile <my-profile>
 ```
 
 ## Run a Shell on a nuxeo container
