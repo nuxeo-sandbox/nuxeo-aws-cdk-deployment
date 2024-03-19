@@ -64,7 +64,10 @@ aws sts get-caller-identity --profile <my-profile>
 ```
 
 ## Deploy
-Edit `bin/nuxeo-aws-cdk.js` to set the `contextProps` properties according to your environement
+Edit `bin/nuxeo-aws-cdk.js` to set the `contextProps` properties according to your environment.
+
+⚠️ Make sure you have done an `export NUXEO_CLID=...` before deploying. The stack creates a secret in AWS Secret Manager, with the value of `NUXEO_CLID`, and this secret is used to register your instance when Nuxeo starts.
+
 
 ```bash
 cdk deploy --profile <my-profile>
