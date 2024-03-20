@@ -64,7 +64,10 @@ aws sts get-caller-identity --profile <my-profile>
 ```
 
 ## Deploy
-Edit `bin/nuxeo-aws-cdk.js` to set the `contextProps` properties according to your environement
+Edit `bin/nuxeo-aws-cdk.js` to set the `contextProps` properties according to your environment.
+
+⚠️ Make sure you have done an `export NUXEO_CLID=...` before deploying. The stack creates a secret in AWS Secret Manager, with the value of `NUXEO_CLID`, and this secret is used to register your instance when Nuxeo starts.
+
 
 ```bash
 cdk deploy --profile <my-profile>
@@ -82,7 +85,27 @@ aws ssm start-session --target <instance-id> --profile <my-profile>
 To get the instance id, use the AWS web console or the CLI
 
 ```bash
-aws ec2 describe-instances --filters "Name=tag:cost:component,Values=nuxeo" --query "Reservations[].Instances[].InstanceId" --profile <my-profile>
+aws ec2 describe-instances --filters "Name=tag:aws:cloudformation:stack-name,Values=nuxeo-stack-cdk-try" --query "Reservations[].Instances[].InstanceId" --profile <my-profile>
+```
+
+### PSQL
+After opening a shell on the bastion host, install the psql command line
+
+```bash
+sudo dnf install postgresql15
+```
+
+Connect to the database with the RDS proxy endpoint and the nuxeo user password (stored in AWS secret manager)
+
+```bash
+psql -h <rds-proxy-endpoint> -u nuxeo
+```
+
+### Tunnel
+With session manager, it is also possible to open a tunnel through the bastion host. For example, a tunnel to the DB can be set up in order to use desktop tools like pgAdmin
+
+```bash
+aws ssm start-session --target <instance-id> --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters '{"host":["<rds-proxy-endpoint>"],"portNumber":["5432"],"localPortNumber":["5432"]}' --profile <my-profile>
 ```
 
 ## Run a Shell on a nuxeo container
