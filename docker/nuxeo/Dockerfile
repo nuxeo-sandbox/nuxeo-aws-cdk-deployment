@@ -1,6 +1,6 @@
 # Upstream image is Rocky Linux 9
 # Change the source image, if necessary
-FROM docker-private.packages.nuxeo.com/nuxeo/nuxeo:2023.8
+FROM docker-private.packages.nuxeo.com/nuxeo/nuxeo:2023.9
 
 ARG NUXEO_CLID
 

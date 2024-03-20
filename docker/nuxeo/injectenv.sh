@@ -36,6 +36,8 @@ nuxeo.db.password=${DB_PASSWORD}
 nuxeo.db.host=${DB_ENDPOINT}
 nuxeo.db.port=5432
 
+nuxeo.vcs.max-pool-size=30
+
 session.timeout=600
 nuxeo.selection.selectAllEnabled=true
 nuxeo.video.transaction.timeout.seconds=1800
@@ -48,6 +50,7 @@ echo "Adding conf to disable queues"
 cat << EOF > ${NUXEO_HOME}/nxserver/config/disable-processing-config.xml
 <?xml version="1.0" encoding="UTF-8"?>
 <component name="nuxeo-disable-processing" version="1.0.0">
+    <require>org.nuxeo.runtime.started</require>
     <extension point="queues" target="org.nuxeo.ecm.core.work.service">
         <queue id="*" processing="false"/>
     </extension>
