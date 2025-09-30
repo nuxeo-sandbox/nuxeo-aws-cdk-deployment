@@ -9,7 +9,7 @@
     "cdk": "cdk"
   },
   "devDependencies": {
-    "aws-cdk": "2.1029.2"
+    "aws-cdk": "2.1029.3"
   },
   "dependencies": {
     "@aws-cdk/aws-msk-alpha": "2.133.0-alpha.0",
