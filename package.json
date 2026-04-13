@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@aws-cdk/aws-msk-alpha": "2.133.0-alpha.0",
-    "aws-cdk-lib": "2.248.0",
-    "cdk-rds-sql": "^8.0.4",
+    "aws-cdk-lib": "2.249.0",
+    "cdk-rds-sql": "^8.0.5",
     "constructs": "^10.6.0"
   }
 }
