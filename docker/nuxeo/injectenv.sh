@@ -8,7 +8,9 @@ cat << EOF >> ${NUXEO_CONF}
 nuxeo.append.templates.my=postgresql-quartz-cluster
 
 nuxeo.cluster.enabled=true
-nuxeo.cluster.nodeid=$(hostname)
+# The hostname binary is not installed in the Nuxeo image, so $(hostname) would silently be empty
+# and Nuxeo would fall back to a different random node id at every start
+nuxeo.cluster.nodeid=${HOSTNAME:-$(cat /etc/hostname)}
 
 nuxeo.url=${NUXEO_URL}
 
