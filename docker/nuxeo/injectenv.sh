@@ -1,14 +1,17 @@
 #!/bin/bash
 
+# Note: \${env:XXX} values are resolved by the Nuxeo launcher at startup, not by this script
 cat << EOF >> ${NUXEO_CONF}
 
-nuxeo.append.templates.my=postgresql
+# postgresql-quartz-cluster includes postgresql and clusters the Quartz scheduler
+# (tables created at deploy time, see sql/quartz-tables.sql)
+nuxeo.append.templates.my=postgresql-quartz-cluster
 
 nuxeo.cluster.enabled=true
-nuxeo.cluster.nodeid=nuxeo-node-${RANDOM}
+nuxeo.cluster.nodeid=$(hostname)
 
 nuxeo.s3storage.bucket=${S3_BUCKET}
-nuxeo.s3storage.region=eu-west-1
+nuxeo.s3storage.region=${AWS_REGION}
 
 nuxeo.s3storage.directdownload.expire=3600
 nuxeo.s3storage.directdownload=true
@@ -19,11 +22,10 @@ nuxeo.s3storage.s3DirectUpload.bucket_prefix=upload_transient/
 nuxeo.s3storage.transient.roleArn=${S3_UPLOAD_ROLE_ARN}
 nuxeo.s3storage.transient.bucket=${S3_BUCKET}
 nuxeo.s3storage.transient.bucket_prefix=upload/
+nuxeo.s3storage.transient.region=${AWS_REGION}
 
-elasticsearch.client=RestClient
-elasticsearch.httpEnabled=true
+# Used by the nuxeo-search-client-opensearch1, nuxeo-audit-opensearch1 and nuxeo-uidgen-opensearch1 packages
 elasticsearch.addressList=https://${OPENSEARCH_ENDPOINT}
-audit.elasticsearch.enabled=true
 elasticsearch.httpReadOnly.baseUrl=https://${OPENSEARCH_ENDPOINT}
 
 kafka.enabled=true
@@ -32,7 +34,7 @@ nuxeo.stream.work.enabled=true
 
 nuxeo.db.name=nuxeo
 nuxeo.db.user=nuxeo
-nuxeo.db.password=${DB_PASSWORD}
+nuxeo.db.password=\${env:DB_PASSWORD}
 nuxeo.db.host=${DB_ENDPOINT}
 nuxeo.db.port=5432
 nuxeo.db.validationQuery=SELECT 1
@@ -42,6 +44,7 @@ nuxeo.vcs.max-pool-size=25
 nuxeo.vcs.idle-timeout-minutes=5
 
 session.timeout=600
+# Not defined in the Nuxeo platform sources, probably a Web UI property: to be verified
 nuxeo.selection.selectAllEnabled=true
 nuxeo.video.transaction.timeout.seconds=1800
 

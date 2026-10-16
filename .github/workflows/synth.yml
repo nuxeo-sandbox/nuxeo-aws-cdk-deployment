@@ -1,0 +1,35 @@
+name: CDK synth
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  synth:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Alpha modules must be released with the same version as aws-cdk-lib
+      - name: Check aws-cdk-lib and aws-msk-alpha versions match
+        run: |
+          node -e '
+            const lib = require("aws-cdk-lib/package.json").version;
+            const msk = require("@aws-cdk/aws-msk-alpha/package.json").version;
+            if (msk !== `${lib}-alpha.0`) {
+              console.error(`aws-cdk-lib ${lib} does not match @aws-cdk/aws-msk-alpha ${msk}`);
+              process.exit(1);
+            }
+          '
+      # Synthesizes the CloudFormation template only: no AWS credentials, no Docker image build, no deployment
+      - name: Synthesize
+        run: npx cdk synth --quiet -c hostedZoneId=Z0000000000000000000 -c zoneName=example.com
+        env:
+          NUXEO_CLID: dummy-clid

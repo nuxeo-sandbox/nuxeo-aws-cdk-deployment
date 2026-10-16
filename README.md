@@ -10,12 +10,23 @@ This CDK project deploys a complete Nuxeo application in a private VPC:
 - An application loadbalancer configured with https
 - A route 53 entry
 
+## Versions
+
+| Component | Version |
+|---|---|
+| Nuxeo | LTS 2025 (`2025.25`, see `docker/nuxeo/Dockerfile`) |
+| Aurora PostgreSQL | 16 |
+| Amazon MSK (Kafka) | 3.9.x, KRaft mode (requires Nuxeo 2025.5+) |
+| Amazon OpenSearch Service | OpenSearch 1.3 |
+
+The previous version, for Nuxeo LTS 2023 (Aurora PostgreSQL 13, Kafka 3.5.1), is available in the `lts2023` branch. It is no longer deployable as is: these engine versions are not supported by AWS anymore.
+
 # How to deploy
 ## Requirements
 Building requires the following software:
 - Git
-- Node
-- Docker
+- Node 22.14 or later (`nvm install 22 && nvm use`, see `.nvmrc`)
+- Docker (with BuildKit, the default in recent versions)
 - AWS CLI
 
 ## Set your Nuxeo CLID as an environment variable
@@ -45,16 +56,16 @@ aws iam create-service-linked-role --aws-service-name opensearchservice.amazonaw
 
 ## Checkout the code and install dependencies
 ```bash
-https://github.com/nuxeo-sandbox/nuxeo-aws-cdk-deployment
+git clone https://github.com/nuxeo-sandbox/nuxeo-aws-cdk-deployment
 cd nuxeo-aws-cdk-deployment
-npm install
+npm ci
 ```
 
 ## Bootstrap CDK
 Before the first deployement in an AWS account, you need to bootstrap the CDK resources
 
 ```bash
-cdk bootstrap aws://ACCOUNT-NUMBER/REGION
+npx cdk bootstrap aws://ACCOUNT-NUMBER/REGION --profile <my-profile>
 ```
 
 The account number can simply be retreived with the following command
@@ -64,13 +75,22 @@ aws sts get-caller-identity --profile <my-profile>
 ```
 
 ## Deploy
-Edit `bin/nuxeo-aws-cdk.js` to set the `contextProps` properties according to your environment.
+The Route 53 hosted zone is passed as CDK context values. Nuxeo will be available at `https://<stackName>.<zoneName>`.
 
-⚠️ Make sure you have done an `export NUXEO_CLID=...` before deploying. The stack creates a secret in AWS Secret Manager, with the value of `NUXEO_CLID`, and this secret is used to register your instance when Nuxeo starts.
-
+⚠️ Make sure you have done an `export NUXEO_CLID=...` before deploying:
+- It is passed as a Docker build secret to install the Nuxeo packages, so it is not stored in the image.
+- The stack also creates a secret in AWS Secrets Manager, with the value of `NUXEO_CLID`, used to register your instance when Nuxeo starts. Note that this value is also written in the synthesized CloudFormation template; to avoid it, create the secret beforehand and import it with `Secret.fromSecretNameV2` in `lib/nuxeo-aws-cdk-stack.js`.
 
 ```bash
-cdk deploy --profile <my-profile>
+npx cdk deploy --profile <my-profile> -c hostedZoneId=<hosted-zone-id> -c zoneName=<zone-name>
+```
+
+The stack name defaults to `nuxeo-stack-cdk-try`, add `-c stackName=<my-stack-name>` to change it.
+
+Check that the database instance class (`db.t4g.medium`) is available for Aurora PostgreSQL 16 in your region:
+
+```bash
+aws rds describe-orderable-db-instance-options --engine aurora-postgresql --engine-version 16.13 --db-instance-class db.t4g.medium --query "OrderableDBInstanceOptions[].AvailabilityZones[].Name" --profile <my-profile>
 ```
 
 ## Bastion Host
@@ -92,13 +112,13 @@ aws ec2 describe-instances --filters "Name=tag:aws:cloudformation:stack-name,Val
 After opening a shell on the bastion host, install the psql command line
 
 ```bash
-sudo dnf install postgresql15
+sudo dnf install postgresql16
 ```
 
-Connect to the database with the RDS proxy endpoint and the nuxeo user password (stored in AWS secret manager)
+Connect to the database with the RDS proxy endpoint and the nuxeo user password (stored in AWS Secrets Manager, secret `<stackName>-db-secret`)
 
 ```bash
-psql -h <rds-proxy-endpoint> -u nuxeo
+psql -h <rds-proxy-endpoint> -U nuxeo -d nuxeo
 ```
 
 ### Tunnel
