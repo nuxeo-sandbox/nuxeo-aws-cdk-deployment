@@ -17,12 +17,12 @@ This CDK project deploys a complete Nuxeo application in a private VPC:
 |---|---|
 | Nuxeo | LTS 2025 (`2025.25`, see `docker/nuxeo/Dockerfile`) |
 | Aurora PostgreSQL | 16 |
-| Amazon MSK (Kafka) | 3.9.x, KRaft mode (requires Nuxeo 2025.5+) |
+| Amazon MSK (Kafka) | 3.9.x, KRaft mode |
 | Amazon OpenSearch Service | OpenSearch 1.3 |
 
 The previous version, for Nuxeo LTS 2023 (Aurora PostgreSQL 13, Kafka 3.5.1), is available in the `lts2023` branch. It is no longer deployable as is: these engine versions are not supported by AWS anymore.
 
-⚠️ **Costs**: the stack runs several billable services (Aurora, OpenSearch, MSK, Fargate, NAT gateway, load balancer...). Delete it when you are done, see [Delete the deployment](#delete-the-deployment).
+⚠️ **Costs**: the stack runs several billable services. With the sizing of this repository, expect roughly **$1,000 to $1,500 per month** if you leave it running (OpenSearch and MSK are the two largest items, then Fargate, Aurora, the RDS proxy, the NAT gateway and the load balancer). Delete it when you are done, see [Delete the deployment](#delete-the-deployment).
 
 # How to deploy
 
@@ -72,7 +72,7 @@ export ZONE_NAME=<zone-name>
 export NUXEO_CLID=<MY_CLID>
 ```
 
-- `STACK_NAME`: lowercase letters, digits and hyphens only, 25 characters maximum (it is used to name the resources, e.g. the S3 bucket and the OpenSearch domain). It must not already be used in the account.
+- `STACK_NAME`: it must start with a lowercase letter, contain only lowercase letters, digits and hyphens, and be 25 characters long at most. It is used to name the resources, so it must not already be used in the account, and the S3 bucket it generates (`<stackName>-bucket`) must not already exist **in any AWS account**, since S3 bucket names are globally unique. The name is checked before anything is deployed.
 - `HOSTED_ZONE_ID` and `ZONE_NAME`: your public hosted zone. To list them (use the ID without the `/hostedzone/` prefix, and the name without the trailing dot):
 
   ```bash
@@ -119,13 +119,13 @@ Optionally, review the resources that will be created:
 npx cdk diff -c stackName=$STACK_NAME -c hostedZoneId=$HOSTED_ZONE_ID -c zoneName=$ZONE_NAME
 ```
 
-Deploy. CDK asks you to confirm the IAM and security group changes (answer `y`). The deployment takes about one hour, mostly for the Kafka and OpenSearch clusters:
+Deploy. CDK asks you to confirm the IAM and security group changes (answer `y`). The deployment takes about one hour: the Nuxeo image is built and pushed to ECR first (a few GB), then most of the time is spent on the Kafka and OpenSearch clusters:
 
 ```bash
 npx cdk deploy -c stackName=$STACK_NAME -c hostedZoneId=$HOSTED_ZONE_ID -c zoneName=$ZONE_NAME
 ```
 
-If a parameter is missing, CDK reports `The Nuxeo stack is not defined, missing: ...` and nothing is deployed.
+If a parameter is missing or invalid, CDK reports `The Nuxeo stack is not defined: ...` and nothing is deployed.
 
 ## Access Nuxeo
 At the end of the deployment, CDK displays the stack outputs, among them the `ServiceURL` and the `BastionHostId`. You can display them again with:
@@ -186,7 +186,7 @@ su nuxeo
 ```
 
 # Delete the deployment
-Delete the stack, with the same parameters as for the deployment (CDK asks for confirmation):
+Delete the stack, with the same parameters as for the deployment (CDK asks for confirmation). `NUXEO_CLID` must still be exported: without it the stack is not defined and CDK does not find it, so set the variables again if you are in a new terminal:
 
 ```bash
 npx cdk destroy -c stackName=$STACK_NAME -c hostedZoneId=$HOSTED_ZONE_ID -c zoneName=$ZONE_NAME

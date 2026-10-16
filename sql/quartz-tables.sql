@@ -4,7 +4,9 @@
 -- Adapted from Nuxeo LTS 2025 templates/postgresql-quartz-cluster/bin/create-quartz-tables.sql:
 -- made idempotent (no DROP, IF NOT EXISTS, ON CONFLICT) and executed as the "nuxeo" role so that
 -- the tables are owned by the role Nuxeo connects with.
--- Executed at deploy time by the cdk-rds-sql Sql construct (see lib/nuxeo-aws-cdk-stack.js).
+-- Executed at deploy time by the cdk-rds-sql Sql construct (see lib/nuxeo-aws-cdk-stack.js), which
+-- connects as the master user. On PostgreSQL 16, SET ROLE requires the SET option on the role: it is
+-- granted by the "-db-init-role-set-option" resource, which this one depends on.
 
 SET ROLE nuxeo;
 

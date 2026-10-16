@@ -10,6 +10,8 @@ nuxeo.append.templates.my=postgresql-quartz-cluster
 nuxeo.cluster.enabled=true
 nuxeo.cluster.nodeid=$(hostname)
 
+nuxeo.url=${NUXEO_URL}
+
 nuxeo.s3storage.bucket=${S3_BUCKET}
 nuxeo.s3storage.region=${AWS_REGION}
 
@@ -26,11 +28,9 @@ nuxeo.s3storage.transient.region=${AWS_REGION}
 
 # Used by the nuxeo-search-client-opensearch1, nuxeo-audit-opensearch1 and nuxeo-uidgen-opensearch1 packages
 elasticsearch.addressList=https://${OPENSEARCH_ENDPOINT}
-elasticsearch.httpReadOnly.baseUrl=https://${OPENSEARCH_ENDPOINT}
 
 kafka.enabled=true
 kafka.bootstrap.servers=${MSK_ENDPOINT}
-nuxeo.stream.work.enabled=true
 
 nuxeo.db.name=nuxeo
 nuxeo.db.user=nuxeo
@@ -44,8 +44,6 @@ nuxeo.vcs.max-pool-size=25
 nuxeo.vcs.idle-timeout-minutes=5
 
 session.timeout=600
-# Not defined in the Nuxeo platform sources, probably a Web UI property: to be verified
-nuxeo.selection.selectAllEnabled=true
 nuxeo.video.transaction.timeout.seconds=1800
 
 EOF
