@@ -30,7 +30,7 @@ The previous version, for Nuxeo LTS 2023 (Aurora PostgreSQL 13, Kafka 3.5.1), is
 Software:
 - Git
 - Node 22.14 or later (for example `nvm install 22`, the repository contains a `.nvmrc`)
-- Docker (with BuildKit, the default in recent versions). On Apple Silicon, the image is built for `linux/amd64` through emulation, which is slower.
+- Docker (with BuildKit, the default in recent versions). On Apple Silicon, the image is built for `linux/amd64` through emulation: Docker Desktop uses Rosetta, so it stays reasonably fast.
 - [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 - The [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) for the AWS CLI, to connect to the bastion host and to the Nuxeo containers
 
@@ -57,6 +57,10 @@ aws sso login --profile <my-profile>
 export AWS_PROFILE=<my-profile>
 export AWS_REGION=<region>
 ```
+
+If your **default** profile is already the one you want to use, `--profile` and `export AWS_PROFILE` are not needed, `aws sso login` is enough.
+
+Sign in right before deploying: the deployment takes about one hour, and an expired session interrupts it. If that happens, the stack keeps being created by CloudFormation, only the command that follows it stops: sign in again and run `npx cdk deploy` with the same parameters to pick it up.
 
 Get your account number, needed to bootstrap CDK:
 
@@ -119,7 +123,7 @@ Optionally, review the resources that will be created:
 npx cdk diff -c stackName=$STACK_NAME -c hostedZoneId=$HOSTED_ZONE_ID -c zoneName=$ZONE_NAME
 ```
 
-Deploy. CDK asks you to confirm the IAM and security group changes (answer `y`). The deployment takes about one hour: the Nuxeo image is built and pushed to ECR first (a few GB), then most of the time is spent on the Kafka and OpenSearch clusters:
+Deploy. CDK asks you to confirm the IAM and security group changes (answer `y`). Count 45 minutes to an hour: the Nuxeo image is built and pushed to ECR first (a few GB), then most of the time is spent on the Kafka cluster and, at the very end, on the first start of Nuxeo:
 
 ```bash
 npx cdk deploy -c stackName=$STACK_NAME -c hostedZoneId=$HOSTED_ZONE_ID -c zoneName=$ZONE_NAME
@@ -161,6 +165,8 @@ Then, in the bastion host session, install the psql command line and connect:
 sudo dnf install -y postgresql16
 psql -h <rds-proxy-endpoint> -U nuxeo -d nuxeo
 ```
+
+The bastion host is a `t3.nano`, so `dnf install` takes several minutes: this is expected.
 
 ### Tunnel
 With Session Manager, it is also possible to open a tunnel through the bastion host. For example, a tunnel to the DB can be set up in order to use desktop tools like pgAdmin, connecting to `localhost:5432`:
@@ -207,6 +213,13 @@ Most resources are deleted with the stack, including the S3 bucket and its conte
   aws logs delete-log-group --log-group-name <log-group-name>
   ```
 
+  The log group of the RDS proxy is **not** returned by the command above, because its name is derived from the stack name without the hyphens. List and delete it separately:
+
+  ```bash
+  aws logs describe-log-groups --log-group-name-prefix /aws/rds/proxy --query "logGroups[].logGroupName" --output text
+  aws logs delete-log-group --log-group-name <log-group-name>
+  ```
+
 - The DNS records created in the hosted zone to validate the certificate may remain. They are harmless and reused if you deploy again.
 
 The CDK bootstrap resources are shared by all the CDK applications deployed in the account and region: keep them.
@@ -221,6 +234,8 @@ export CDK_QUALIFIER=<qualifier>
 npx cdk bootstrap aws://<ACCOUNT-NUMBER>/$AWS_REGION --qualifier $CDK_QUALIFIER --toolkit-stack-name CDKToolkit-$CDK_QUALIFIER
 ```
 
+The CDK CLI prints `Unknown option(s): --q. These will be ignored.` on this command. It is a false alarm: `--qualifier` is a valid option and it is applied, check the `BucketName` and `ImageRepositoryName` outputs of the `CDKToolkit-<qualifier>` stack.
+
 Then add `-c @aws-cdk/core:bootstrapQualifier=$CDK_QUALIFIER --toolkit-stack-name CDKToolkit-$CDK_QUALIFIER` to **all** the `cdk diff`, `cdk deploy` and `cdk destroy` commands, for example:
 
 ```bash
@@ -234,10 +249,19 @@ aws ecr delete-repository --repository-name cdk-$CDK_QUALIFIER-container-assets-
 aws cloudformation delete-stack --stack-name CDKToolkit-$CDK_QUALIFIER
 ```
 
-Then empty and delete the `cdk-<qualifier>-assets-<ACCOUNT-NUMBER>-<region>` S3 bucket, which is kept by CloudFormation (the bucket is versioned: use the **Empty** button of the S3 console, which also deletes the previous versions).
+The `cdk-$CDK_QUALIFIER-assets-<ACCOUNT-NUMBER>-$AWS_REGION` S3 bucket is kept by CloudFormation. It is versioned, so every version has to be deleted before the bucket itself:
+
+```bash
+BUCKET=cdk-$CDK_QUALIFIER-assets-<ACCOUNT-NUMBER>-$AWS_REGION
+aws s3api delete-objects --bucket $BUCKET \
+  --delete "$(aws s3api list-object-versions --bucket $BUCKET --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' --output json)"
+aws s3api delete-bucket --bucket $BUCKET
+```
+
+If `delete-bucket` reports that the bucket is not empty, it also contains delete markers: run the same `delete-objects` command with `DeleteMarkers[]` instead of `Versions[]`, then delete the bucket again.
 
 ## Deploy fails: a secret "is already scheduled for deletion"
-When deploying again with the same stack name shortly after deleting it, the previous secrets may still be pending deletion. Delete them immediately (`<STACK_NAME>-clid` and `<STACK_NAME>-db-secret`), then deploy again:
+The secrets of the stack (`<STACK_NAME>-clid` and `<STACK_NAME>-db-secret`) are normally deleted with it. Should they be kept pending deletion instead, deploying again with the same stack name fails: delete them immediately, then deploy again:
 
 ```bash
 aws secretsmanager delete-secret --secret-id <secret-name> --force-delete-without-recovery

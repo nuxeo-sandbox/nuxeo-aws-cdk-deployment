@@ -4,3 +4,4 @@ node_modules
 .cdk.staging
 cdk.out
 .idea
+.DS_Store
