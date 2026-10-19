@@ -9,8 +9,7 @@
 >   stack is deployed**.
 > - The stack is **billable** and is not covered by the free tier: see [Costs](#costs)
 >   and [Delete the deployment](#delete-the-deployment).
-> - **Autoscaling is an example and needs tuning** (fopr example, add sticky sessions
-    to the loadbalancer)
+> - **Autoscaling is an example and needs tuning**: see [About autoscaling](#about-autoscaling).
 
 ## Description
 This CDK project deploys a complete Nuxeo application in a private VPC:
@@ -30,6 +29,27 @@ dedicated master node), 2 MSK brokers (`kafka.m5.large`, 100 GiB each), a single
 would serve no traffic), one NAT gateway, one web Fargate task (2 vCPU / 4 GiB / 30 GiB of
 ephemeral storage) and one worker Fargate task (4 vCPU / 8 GiB / 60 GiB, it runs the video and
 image conversions), both able to scale out to 2.
+
+## About autoscaling
+
+Both Fargate services declare a scaling policy, but these are **examples**: the thresholds and
+the limits are arbitrary.
+
+The two services do not scale the same way:
+
+- **The worker service** runs the asynchronous processing. It is not behind the load balancer
+  and gets its work from Kafka, which distributes it across the nodes. It can be scaled out as
+  is, without sticky sessions. Two things still need tuning: the scaling signal should follow
+  the processing backlog rather than the CPU, and the maximum number of nodes should not exceed
+  the number of Kafka partitions, as extra nodes would stay idle.
+
+- **The web service** serves the browser and the REST API. Nuxeo keeps the authenticated user
+  in the HTTP session and does not replicate sessions between nodes, so running more than one
+  web node requires **sticky sessions** on the load balancer. They are not enabled in this
+  stack.
+
+So scaling the background processing is straightforward, scaling the front is what requires
+extra load balancer configuration.
 
 ## Versions
 
