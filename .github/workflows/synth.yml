@@ -30,6 +30,6 @@ jobs:
           '
       # Synthesizes the CloudFormation template only: no AWS credentials, no Docker image build, no deployment
       - name: Synthesize
-        run: npx cdk synth --quiet -c hostedZoneId=Z0000000000000000000 -c zoneName=example.com
+        run: npx cdk synth --quiet -c stackName=ci-synth -c hostedZoneId=Z0000000000000000000 -c zoneName=example.com
         env:
           NUXEO_CLID: dummy-clid
