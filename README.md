@@ -9,6 +9,8 @@
 >   stack is deployed**.
 > - The stack is **billable** and is not covered by the free tier: see [Costs](#costs)
 >   and [Delete the deployment](#delete-the-deployment).
+> - **Autoscaling is an example and needs tuning** (fopr example, add sticky sessions
+    to the loadbalancer)
 
 ## Description
 This CDK project deploys a complete Nuxeo application in a private VPC:
@@ -67,7 +69,7 @@ You also need:
 ```bash
 git clone https://github.com/nuxeo-sandbox/nuxeo-aws-cdk-deployment
 cd nuxeo-aws-cdk-deployment
-nvm use
+nvm use 22 ## or greater
 npm ci
 ```
 
