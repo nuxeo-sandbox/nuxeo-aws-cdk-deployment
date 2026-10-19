@@ -6,10 +6,10 @@ const { NuxeoCdkStack } = require('../lib/nuxeo-aws-cdk-stack');
 const app = new cdk.App();
 
 // Values are passed on the command line, e.g.
-// cdk deploy -c hostedZoneId=Z0123456789 -c zoneName=example.com [-c stackName=my-nuxeo]
+// cdk deploy -c stackName=my-nuxeo -c hostedZoneId=Z0123456789 -c zoneName=example.com
 const hostedZoneId = app.node.tryGetContext('hostedZoneId');
 const zoneName = app.node.tryGetContext('zoneName');
-const stackName = app.node.tryGetContext('stackName') || 'nuxeo-stack-cdk-try';
+const stackName = app.node.tryGetContext('stackName');
 
 const problems = [];
 if (!hostedZoneId) {
@@ -23,12 +23,15 @@ if (!process.env.NUXEO_CLID) {
 }
 
 /*
- * The stack name is used as a prefix for the resource names, so it must satisfy the strictest of
- * their constraints: the OpenSearch domain (<stackName>-os) is limited to 28 characters, must start
- * with a lowercase letter and only accepts lowercase letters, digits and hyphens. Checking it here
- * avoids a failure an hour into the deployment.
+ * There is no default stack name on purpose: it names every resource of the stack, so falling back
+ * to one silently would deploy, or worse delete, something else than what the caller expects.
+ * It must also satisfy the strictest of the resource name constraints: the OpenSearch domain
+ * (<stackName>-os) is limited to 28 characters, must start with a lowercase letter and only accepts
+ * lowercase letters, digits and hyphens. Checking it here avoids a failure an hour into the deployment.
  */
-if (!/^[a-z][a-z0-9-]{0,24}$/.test(stackName)) {
+if (!stackName) {
+  problems.push('missing context value "stackName" (-c stackName=<value>)');
+} else if (!/^[a-z][a-z0-9-]{0,24}$/.test(stackName)) {
   problems.push(
     `invalid "stackName": "${stackName}" must start with a lowercase letter, contain only lowercase` +
       ' letters, digits and hyphens, and be 25 characters long at most'
